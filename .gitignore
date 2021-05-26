@@ -1,0 +1,14 @@
+node_modules
+
+coverage
+coverage.json
+.coverage_artifacts
+.coverage_contracts
+
+# Hardhat
+cache
+build
+artifacts
+
+# Dotenv
+.env
