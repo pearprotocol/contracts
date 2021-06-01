@@ -124,7 +124,7 @@ contract TokenFactory is ITokenFactory {
         }
 
         uint256 priceAtSupply = BASE_PRICE + ((RISE_PRICE * updatedSupply) / SCALE);
-        uint256 priceAtSupplyMinusAmount = BASE_PRICE + ((RISE_PRICE * (updatedSupply + updatedAmount)) / SCALE);
+        uint256 priceAtSupplyMinusAmount = BASE_PRICE + ((RISE_PRICE * (updatedSupply - updatedAmount)) / SCALE);
         uint256 average = (priceAtSupply + priceAtSupplyMinusAmount) / 2;
 
         return hatchPrice + (average * (updatedAmount / SCALE));

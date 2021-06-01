@@ -129,9 +129,9 @@ describe("TokenFactory", function() {
         { supply: '100000', amount: '1000', cost: '100' },
         { supply: '100000', amount: '100000', cost: '10000' },
 
-        { supply: '1000000', amount: '1', cost: '90.10005' },
-        { supply: '1000000', amount: '10', cost: '901.005' },
-        { supply: '1000000', amount: '1000000', cost: '121600000' },
+        { supply: '1000000', amount: '1', cost: '90.09995' },
+        { supply: '1000000', amount: '10', cost: '900.995' },
+        { supply: '1000000', amount: '1000000', cost: '40600000' },
       ];
 
       scenarios.forEach(function(value, i) {
@@ -167,8 +167,8 @@ describe("TokenFactory", function() {
 
         { type: 'buy', supply: '0', amount: '1000000', cost: '40600000' },
         { type: 'buy', supply: '1000000', amount: '10', cost: '901.005' },
-        { type: 'sell', supply: '1000010', amount: '10', cost: '901.015' },
-        { type: 'sell', supply: '1000000', amount: '1000000', cost: '121600000' },
+        { type: 'sell', supply: '1000010', amount: '10', cost: '901.005' },
+        { type: 'sell', supply: '1000000', amount: '1000000', cost: '40600000' },
       ];
 
       scenarios.forEach(function(value, i) {
