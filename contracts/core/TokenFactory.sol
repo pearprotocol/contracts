@@ -20,6 +20,8 @@ contract TokenFactory is ITokenFactory {
     uint256 constant public INITIAL_TOKENS = 100000 * SCALE;
 
     IERC20 public dai;
+    uint256 public totalDaiDeposited;
+    address public interestManager;
     address public tokenTemplate;
 
     // mapping for address to token info
@@ -27,6 +29,7 @@ contract TokenFactory is ITokenFactory {
 
     event NewToken(address indexed token, address indexed creator, address indexed deployer);
     event CreatorChanged(address indexed token, address indexed newCreator, address indexed oldCreator);
+    event TokenMinted(address indexed token, address indexed sender, address indexed recipient, uint256 amount, uint256 cost);
 
     constructor(address _tokenTemplate) {
         tokenTemplate = _tokenTemplate;
@@ -70,15 +73,38 @@ contract TokenFactory is ITokenFactory {
         tokenInfo.creator = creator;
     }
 
-    function buyTokens(address token, uint256 tokenAmount, uint256 slippage, uint256 daiAmount, address recipient) external override {
+    function buyTokens(address token, uint256 tokenAmount, uint256 minimumTokenAmount, uint256 daiAmount, address recipient) external override {
         TokenInfo memory tokenInfo = tokenInfos[token];
         require(tokenInfo.token != address(0x0), 'Token does not exist');
 
+        // actual amount of tokens
+        uint256 actualAmount = tokenAmount;
+
         // get total supply
         uint256 supply = IERC20(token).totalSupply();
+        uint256 costToBuy = buyCost(supply, actualAmount);
+        if(costToBuy > daiAmount) {
+            // get buy cost again for minimum token amount
+            actualAmount = minimumTokenAmount;
+            costToBuy = buyCost(supply, actualAmount);
+
+            require(costToBuy <= daiAmount, "Too much slippage");
+        }
+
+        require(dai.allowance(msg.sender, address(this)) >= costToBuy, "Insufficient allowance");
+        require(dai.transferFrom(msg.sender, address(interestManager), costToBuy), "DAI transfer failed");
+
+        // update deposited dai
+        totalDaiDeposited = totalDaiDeposited + costToBuy;
+
+        // mint token to recipient
+        IToken(token).mint(recipient, actualAmount);
+
+        // emit an event for record
+        emit TokenMinted(token, msg.sender, recipient, actualAmount, costToBuy);
     }
 
-    function buyCost(uint256 supply, uint256 amount) public view returns (uint256) {
+    function buyCost(uint256 supply, uint256 amount) public pure returns (uint256) {
         uint256 hatchPrice = 0;
         uint256 updatedAmount = 0;
         uint256 updatedSupply = 0;
@@ -105,7 +131,7 @@ contract TokenFactory is ITokenFactory {
         return hatchPrice + (average * (updatedAmount / SCALE));
     }
 
-    function sellCost(uint256 supply, uint256 amount) public view returns (uint256) {
+    function sellCost(uint256 supply, uint256 amount) public pure returns (uint256) {
         uint256 hatchPrice = 0;
         uint256 updatedAmount = amount;
         uint256 updatedSupply;
