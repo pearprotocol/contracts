@@ -165,7 +165,7 @@ describe("TokenFactory", function() {
         { type: 'sell', supply: '110', amount: '10', cost: '1' },
         { type: 'sell', supply: '100', amount: '100', cost: '10' },
 
-        { type: 'buy', supply: '1000000', amount: '1', cost: '90.10005' },
+        { type: 'buy', supply: '0', amount: '1000000', cost: '40600000' },
         { type: 'buy', supply: '1000000', amount: '10', cost: '901.005' },
         { type: 'sell', supply: '1000010', amount: '10', cost: '901.015' },
         { type: 'sell', supply: '1000000', amount: '1000000', cost: '121600000' },
