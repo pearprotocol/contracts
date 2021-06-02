@@ -30,6 +30,7 @@ contract TokenFactory is ITokenFactory {
     event NewToken(address indexed token, address indexed creator, address indexed deployer);
     event CreatorChanged(address indexed token, address indexed newCreator, address indexed oldCreator);
     event TokenMinted(address indexed token, address indexed sender, address indexed recipient, uint256 amount, uint256 cost);
+    event TokenBurnt(address indexed token, address indexed sender, address indexed recipient, uint256 amount, uint256 cost);
 
     constructor(address _tokenTemplate) {
         tokenTemplate = _tokenTemplate;
@@ -91,7 +92,6 @@ contract TokenFactory is ITokenFactory {
             require(costToBuy <= daiAmount, "Too much slippage");
         }
 
-        require(dai.allowance(msg.sender, address(this)) >= costToBuy, "Insufficient allowance");
         require(dai.transferFrom(msg.sender, address(interestManager), costToBuy), "DAI transfer failed");
 
         // update deposited dai
@@ -104,7 +104,35 @@ contract TokenFactory is ITokenFactory {
         emit TokenMinted(token, msg.sender, recipient, actualAmount, costToBuy);
     }
 
-    function buyCost(uint256 supply, uint256 amount) public pure returns (uint256) {
+    function sellTokens(address token, uint256 tokenAmount, uint256 minimumPrice, address recipient) external override {
+        TokenInfo memory tokenInfo = tokenInfos[token];
+        require(tokenInfo.token != address(0x0), 'Token does not exist');
+
+        // get total supply
+        uint256 supply = IERC20(token).totalSupply();
+        uint256 costToSell = sellCost(supply, tokenAmount);
+
+        // check slippage
+        require(costToSell >= minimumPrice, "Too much slippage");
+
+        // update deposited dai
+        totalDaiDeposited = totalDaiDeposited - costToSell;
+
+        // burn token from sender
+        IToken(token).burn(msg.sender, tokenAmount);
+
+        // transfer dai
+        require(dai.transfer(recipient, costToSell), "DAI transfer failed");
+
+        // emit an event for record
+        emit TokenBurnt(token, msg.sender, recipient, tokenAmount, costToSell);
+    }
+
+    //
+    // Pure functions
+    //
+
+    function buyCost(uint256 supply, uint256 amount) public pure override returns (uint256) {
         uint256 hatchPrice = 0;
         uint256 updatedAmount = 0;
         uint256 updatedSupply = 0;
@@ -131,7 +159,7 @@ contract TokenFactory is ITokenFactory {
         return hatchPrice + (average * (updatedAmount / SCALE));
     }
 
-    function sellCost(uint256 supply, uint256 amount) public pure returns (uint256) {
+    function sellCost(uint256 supply, uint256 amount) public pure override returns (uint256) {
         uint256 hatchPrice = 0;
         uint256 updatedAmount = amount;
         uint256 updatedSupply;
